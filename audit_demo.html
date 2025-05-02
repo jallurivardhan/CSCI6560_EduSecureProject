@@ -1,0 +1,174 @@
+<!-- templates/audit_demo.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Server Audit Demo</h2>
+
+    <!-- Generate Audit Events Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Generate Audit Events</h4>
+        </div>
+        <div class="card-body">
+            <p>Perform operations that will generate audit log entries:</p>
+            
+            <div class="row">
+                <!-- Insert New Student -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Insert New Student</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('insert_student') }}">
+                                <div class="mb-3">
+                                    <label for="student_id" class="form-label">Student ID</label>
+                                    <input type="text" class="form-control" id="student_id" name="student_id" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="full_name" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Insert</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modify Student -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Modify Student</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('modify_student') }}">
+                                <div class="mb-3">
+                                    <label for="mod_student_id" class="form-label">Student ID</label>
+                                    <input type="text" class="form-control" id="mod_student_id" name="student_id" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="new_email" class="form-label">New Email</label>
+                                    <input type="email" class="form-control" id="new_email" name="new_email" required>
+                                </div>
+                                <button type="submit" class="btn btn-warning">Update</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Logs Section -->
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">Recent Audit Logs</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Event Time</th>
+                            <th>Event Type</th>
+                            <th>Username</th>
+                            <th>Description</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in audit_logs %}
+                        <tr>
+                            <td>{{ log.EventTime }}</td>
+                            <td>{{ log.EventType }}</td>
+                            <td>{{ log.Username }}</td>
+                            <td>{{ log.EventDescription }}</td>
+                            <td>{{ log.IPAddress }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Statistics -->
+    {% if event_stats %}
+    <div class="card mt-4">
+        <div class="card-header bg-success text-white">
+            <h4 class="mb-0">Event Statistics</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Event Type</th>
+                            <th>Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in event_stats %}
+                        <tr>
+                            <td>{{ stat.EventType }}</td>
+                            <td>{{ stat.Count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    {% if event_stats %}
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('eventChart').getContext('2d');
+        
+        const labels = [{% for stat in event_stats %}'{{ stat.EventType }}',{% endfor %}];
+        const data = [{% for stat in event_stats %}{{ stat.Count }},{% endfor %}];
+        const colors = [
+            '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'
+        ];
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors.slice(0, labels.length),
+                    hoverBackgroundColor: colors.slice(0, labels.length),
+                    hoverBorderColor: "rgba(234, 236, 244, 1)",
+                }],
+            },
+            options: {
+                maintainAspectRatio: false,
+                tooltips: {
+                    backgroundColor: "rgb(255,255,255)",
+                    bodyFontColor: "#858796",
+                    borderColor: '#dddfeb',
+                    borderWidth: 1,
+                    xPadding: 15,
+                    yPadding: 15,
+                    displayColors: false,
+                    caretPadding: 10,
+                },
+                legend: {
+                    display: true,
+                    position: 'bottom'
+                },
+                cutoutPercentage: 70,
+            },
+        });
+    });
+    {% endif %}
+</script>
+{% endblock %}
+

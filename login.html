@@ -1,0 +1,60 @@
+<!-- templates/login.html -->
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="text-center mb-4">
+                <img src="{{ url_for('static', filename='mtsu_logo.svg') }}" alt="MTSU Logo" style="height: 80px; margin-bottom: 15px;">
+                <h2 style="color: #0066CC; font-weight: 600;">Academy DB</h2>
+                <p class="text-muted">Security Management System</p>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-header text-white" style="background: linear-gradient(135deg, #0066CC, #75B2DD);">
+                    <h4 class="mb-0">Login</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{{ url_for('login') }}">
+                        <div class="mb-4">
+                            <label for="username" class="form-label">Username</label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="background-color: rgba(0,102,204,0.1); color: #0066CC;">
+                                    <i class="bi bi-person"></i>
+                                </span>
+                                <input type="text" class="form-control" id="username" name="username" 
+                                       placeholder="Enter your username" required
+                                       style="border-color: rgba(0,102,204,0.2);">
+                            </div>
+                            <div class="form-text"> Admin</div>
+                        </div>
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text" style="background-color: rgba(0,102,204,0.1); color: #0066CC;">
+                                    <i class="bi bi-key"></i>
+                                </span>
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       placeholder="Enter your password" required
+                                       style="border-color: rgba(0,102,204,0.2);">
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary" style="background-color: #0066CC; border-color: #0066CC;">
+                                Sign In
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <p class="text-muted small">© 2025 MTSU Academic Management System</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+{% endblock %}

@@ -1,0 +1,803 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    :root {
+        --mtsu-blue: #0066CC;
+        --mtsu-light-blue: #75B2DD;
+    }
+    .feature-card {
+        height: 100%;
+        transition: all 0.2s ease;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-radius: 8px;
+    }
+    .feature-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    .status-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+    .feature-icon {
+        font-size: 2.5rem;
+        color: var(--mtsu-blue);
+        margin-bottom: 15px;
+    }
+    .test-result {
+        margin-bottom: 5px;
+    }
+    .accordion-button:not(.collapsed) {
+        background-color: #f8f9fa;
+        color: var(--mtsu-blue);
+    }
+    .security-tabs .nav-link {
+        color: #495057;
+        font-weight: 500;
+    }
+    .security-tabs .nav-link.active {
+        color: var(--mtsu-blue);
+        border-bottom: 2px solid var(--mtsu-blue);
+    }
+    .security-tabs .nav-link:hover {
+        color: var(--mtsu-blue);
+    }
+    .btn-icon-only {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .header-section {
+        background: linear-gradient(135deg, var(--mtsu-blue), var(--mtsu-light-blue));
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .btn-dashboard {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .btn-dashboard:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+        color: white;
+    }
+    .btn-dashboard i {
+        color: white;
+    }
+    .white-icon {
+        color: white !important;
+    }
+    .dark-icon {
+        color: #212529 !important;
+    }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="header-section d-flex justify-content-between align-items-center">
+        <h1 class="mb-0"><i class="bi bi-shield-lock white-icon"></i> Security Dashboard</h1>
+        <div>
+            <a href="{{ url_for('security_metrics') }}" class="btn btn-dashboard me-2">
+                <i class="bi bi-graph-up"></i> Security Metrics
+            </a>
+            <a href="{{ url_for('user_activity_monitoring') }}" class="btn btn-dashboard me-2">
+                <i class="bi bi-people"></i> User Activity
+            </a>
+            <a href="{{ url_for('setup_security_tables_route') }}" class="btn btn-danger me-2">
+                <i class="bi bi-database-gear white-icon"></i> Setup Tables
+            </a>
+            <button class="btn btn-primary" onclick="runAllTests()" style="background-color: white; color: var(--mtsu-blue); border-color: white;">
+                <i class="bi bi-arrow-repeat"></i> Run All Tests
+            </button>
+        </div>
+    </div>
+
+    <!-- System Status Overview -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card {% if overall_status == 'PASS' %}bg-success{% else %}bg-danger{% endif %} text-white feature-card">
+                <div class="card-body">
+                    <h3 class="card-title">Overall Security Status</h3>
+                    <div class="d-flex align-items-center">
+                        <h1 class="display-4 me-3">
+                            <i class="bi {% if overall_status == 'PASS' %}bi-shield-check{% else %}bi-shield-exclamation{% endif %} white-icon"></i>
+                        </h1>
+                        <div>
+                            <h2>{{ overall_status }}</h2>
+                            <p class="mb-0">Last checked: {{ current_datetime }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card feature-card">
+                <div class="card-body">
+                    <h3 class="card-title">Security Test Summary</h3>
+                    <div class="row text-center">
+                        <div class="col">
+                            <div class="p-3 bg-light rounded">
+                                <div class="feature-icon text-success">
+                                    <i class="bi bi-check-circle"></i>
+                                </div>
+                                <h3 class="text-success">{{ passed_tests|default(0) }}</h3>
+                                <p class="mb-0">Tests Passed</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="p-3 bg-light rounded">
+                                <div class="feature-icon text-danger">
+                                    <i class="bi bi-x-circle"></i>
+                                </div>
+                                <h3 class="text-danger">{{ failed_tests|default(0) }}</h3>
+                                <p class="mb-0">Tests Failed</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="p-3 bg-light rounded">
+                                <div class="feature-icon text-warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                </div>
+                                <h3 class="text-warning">{{ warning_tests|default(0) }}</h3>
+                                <p class="mb-0">Warnings</p>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="p-3 bg-light rounded">
+                                <div class="feature-icon text-secondary">
+                                    <i class="bi bi-dash-circle"></i>
+                                </div>
+                                <h3 class="text-secondary">{{ error_tests|default(0) }}</h3>
+                                <p class="mb-0">Errors</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Features Grid -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card feature-card">
+                <div class="card-header bg-white">
+                    <h3 class="mb-0">Security Features</h3>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs security-tabs mb-3" id="securityTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="rbac-tab" data-bs-toggle="tab" data-bs-target="#rbac" type="button" role="tab" aria-controls="rbac" aria-selected="true">
+                                <i class="bi bi-person-lock me-1 dark-icon"></i> Role-Based Access
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="encryption-tab" data-bs-toggle="tab" data-bs-target="#encryption" type="button" role="tab" aria-controls="encryption" aria-selected="false">
+                                <i class="bi bi-key me-1 dark-icon"></i> Column Encryption
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit" type="button" role="tab" aria-controls="audit" aria-selected="false">
+                                <i class="bi bi-journal-text me-1 dark-icon"></i> Audit Logging
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="masking-tab" data-bs-toggle="tab" data-bs-target="#masking" type="button" role="tab" aria-controls="masking" aria-selected="false">
+                                <i class="bi bi-eye-slash me-1 dark-icon"></i> Data Masking
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="triggers-tab" data-bs-toggle="tab" data-bs-target="#triggers" type="button" role="tab" aria-controls="triggers" aria-selected="false">
+                                <i class="bi bi-lightning me-1 dark-icon"></i> Security Triggers
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="backup-tab" data-bs-toggle="tab" data-bs-target="#backup" type="button" role="tab" aria-controls="backup" aria-selected="false">
+                                <i class="bi bi-database-fill me-1 dark-icon"></i> Database Backup
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content p-3" id="securityTabsContent">
+                        <!-- RBAC Tab -->
+                        <div class="tab-pane fade show active" id="rbac" role="tabpanel" aria-labelledby="rbac-tab">
+                            <h4 class="mb-3">Role-Based Access Control</h4>
+                            <div class="row">
+                                {% for test in test_results['Role-Based Access Control']|default([]) %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body">
+                                            <span class="badge status-badge {% if test.status == 'PASS' %}bg-success{% elif test.status == 'FAIL' %}bg-danger{% elif test.status == 'WARNING' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                                {{ test.status }}
+                                            </span>
+                                            <h5 class="card-title">{{ test.test }}</h5>
+                                            <p class="card-text">{{ test.message }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                
+                                <!-- RBAC Features -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">User & Role Management</h5>
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>List All Roles</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="list_roles">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-play"></i> Run
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>List All Users</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="list_users">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-play"></i> Run
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Show User Grants</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="show_admin_grants">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-play"></i> Admin1
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span><strong>Setup Role Permissions</strong></span>
+                                                    <a href="{{ url_for('setup_role_permissions') }}" class="btn btn-sm btn-danger">
+                                                        <i class="bi bi-key"></i> Setup
+                                                    </a>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span><strong>Initialize RBAC (Fix Missing Roles)</strong></span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="init_rbac">
+                                                        <button type="submit" class="btn btn-sm btn-warning">
+                                                            <i class="bi bi-wrench"></i> Fix Roles
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">View-Based Access Control</h5>
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>AdminStudentsMaskedView</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="admin_students_view">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-eye"></i> View
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>FacultyStudentsMaskedView</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="faculty_students_view">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-eye"></i> View
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>StudentSelfMaskedView</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="student_self_view">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-eye"></i> View
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Encryption Tab -->
+                        <div class="tab-pane fade" id="encryption" role="tabpanel" aria-labelledby="encryption-tab">
+                            <h4 class="mb-3">Column-Level Encryption</h4>
+                            <div class="row">
+                                {% for test in test_results['Column Encryption']|default([]) %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body">
+                                            <span class="badge status-badge {% if test.status == 'PASS' %}bg-success{% elif test.status == 'FAIL' %}bg-danger{% elif test.status == 'WARNING' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                                {{ test.status }}
+                                            </span>
+                                            <h5 class="card-title">{{ test.test }}</h5>
+                                            <p class="card-text">{{ test.message }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                
+                                <!-- Encryption Features -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Encryption Key Management</h5>
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>View Encryption Keys</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="view_encryption_keys">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-eye"></i> View
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Generate New Key</span>
+                                                    <form action="{{ url_for('encryption_demo') }}" method="get" style="display:inline;">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-key"></i> Generate
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span><strong>Generate CLE Key</strong></span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="generate_cle_key">
+                                                        <button type="submit" class="btn btn-sm btn-success">
+                                                            <i class="bi bi-shield-check"></i> Create CLE Key
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span><strong>Crypto Dashboard</strong></span>
+                                                    <a href="{{ url_for('crypto.crypto_dashboard') }}" class="btn btn-sm btn-primary">
+                                                        <i class="bi bi-shield-lock"></i> Open Dashboard
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Encrypted Data Views</h5>
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Students Encrypted Data</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="view_encrypted_data">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-eye"></i> View
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Students Decrypted View</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="view_decrypted_data">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-eye"></i> View
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Audit Tab -->
+                        <div class="tab-pane fade" id="audit" role="tabpanel" aria-labelledby="audit-tab">
+                            <h4 class="mb-3">Audit Logging</h4>
+                            <div class="row">
+                                {% for test in test_results['Audit Logging']|default([]) %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body">
+                                            <span class="badge status-badge {% if test.status == 'PASS' %}bg-success{% elif test.status == 'FAIL' %}bg-danger{% elif test.status == 'WARNING' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                                {{ test.status }}
+                                            </span>
+                                            <h5 class="card-title">{{ test.test }}</h5>
+                                            <p class="card-text">{{ test.message }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                
+                                <!-- Audit Features -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Audit Logs</h5>
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Recent Audit Logs</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="recent_audit_logs">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-eye"></i> View
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Login Activity</span>
+                                                    <a href="javascript:void(0)" onclick="executeQuery('SELECT * FROM SystemAuditLog WHERE EventType=\'LOGIN\' ORDER BY EventTime DESC LIMIT 10')" class="btn btn-sm btn-primary">
+                                                        <i class="bi bi-eye"></i> View
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Audit Analysis</h5>
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Event Summary</span>
+                                                    <form action="{{ url_for('handle_audit_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="event_summary">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-bar-chart"></i> Analyze
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>User Activity</span>
+                                                    <form action="{{ url_for('handle_audit_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="user_activity">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-bar-chart"></i> Analyze
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Masking Tab -->
+                        <div class="tab-pane fade" id="masking" role="tabpanel" aria-labelledby="masking-tab">
+                            <h4 class="mb-3">Data Masking</h4>
+                            <div class="row">
+                                <!-- Masking Features -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Static Masking</h5>
+                                            <p>Functions that permanently mask data:</p>
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Mask Email Function</span>
+                                                    <form action="{{ url_for('handle_masking_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="mask_email">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-eye"></i> Test
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Mask Contact Function</span>
+                                                    <form action="{{ url_for('handle_masking_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="mask_contact">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-eye"></i> Test
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Dynamic Masking</h5>
+                                            <p>Data masked differently based on user role:</p>
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Admin View</span>
+                                                    <form action="{{ url_for('handle_masking_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="admin_view">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-eye"></i> View
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Faculty View</span>
+                                                    <form action="{{ url_for('handle_masking_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="faculty_view">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-eye"></i> View
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span>Student View</span>
+                                                    <form action="{{ url_for('handle_masking_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="student_view">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-eye"></i> View
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Triggers Tab -->
+                        <div class="tab-pane fade" id="triggers" role="tabpanel" aria-labelledby="triggers-tab">
+                            <h4 class="mb-3">Security Triggers</h4>
+                            <div class="row">
+                                <!-- Triggers Features -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">User Synchronization Triggers</h5>
+                                            <p>Automatically keeps system users synchronized with domain tables:</p>
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span><strong>trg_StuUserSync</strong> - Syncs Students to SystemUsers</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="run_trigger_stuusersync">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-play"></i> Execute
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span><strong>trg_FacultyUserSync</strong> - Syncs Faculty to SystemUsers</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="run_trigger_facultyusersync">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-play"></i> Execute
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span><strong>trg_AdminUserSync</strong> - Syncs Admin to SystemUsers</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="run_trigger_adminusersync">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-play"></i> Execute
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">Security Enforcement Triggers</h5>
+                                            <p>Enforces security policies automatically:</p>
+                                            <ul class="list-group">
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span><strong>trg_LogLoginAttempt</strong> - Logs login success/failure</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="run_trigger_logloginattempt">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-play"></i> Execute
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span><strong>trg_EnforcePasswordPolicy</strong> - Enforces password strength</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="run_trigger_passwordpolicy">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-play"></i> Execute
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span><strong>trg_AutoLockAccount</strong> - Locks account after 5 failed attempts</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="run_trigger_autolock">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-play"></i> Execute
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <span><strong>trg_EncryptStudentData</strong> - Auto-encrypts student data</span>
+                                                    <form action="{{ url_for('run_security_action') }}" method="post" style="display:inline;">
+                                                        <input type="hidden" name="action" value="run_trigger_encryptstudent">
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-play"></i> Execute
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Backup Tab -->
+                        <div class="tab-pane fade" id="backup" role="tabpanel" aria-labelledby="backup-tab">
+                            <h4 class="mb-3">Database Backup & Recovery</h4>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body text-center p-4">
+                                            <div class="feature-icon mb-3">
+                                                <i class="bi bi-database-fill-check"></i>
+                                            </div>
+                                            <h5 class="card-title">Backup Management</h5>
+                                            <div class="d-grid gap-2 mt-4">
+                                                <a href="{{ url_for('backup_dashboard') }}" class="btn btn-primary">
+                                                    <i class="bi bi-shield-lock"></i> Backup Dashboard
+                                                </a>
+                                                <a href="{{ url_for('create_backup_route') }}" class="btn btn-success">
+                                                    <i class="bi bi-plus-circle"></i> Create New Backup
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card feature-card">
+                                        <div class="card-body p-4">
+                                            <h5 class="card-title text-center mb-3">Backup Best Practices</h5>
+                                            <div class="list-group">
+                                                <div class="list-group-item border-0">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="me-3 text-primary">
+                                                            <i class="bi bi-calendar-check fs-5"></i>
+                                                        </div>
+                                                        <div>
+                                                            <strong>Regular Scheduling</strong>
+                                                            <div class="text-muted small">Create automated full backups on a schedule</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="list-group-item border-0">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="me-3 text-primary">
+                                                            <i class="bi bi-geo-alt fs-5"></i>
+                                                        </div>
+                                                        <div>
+                                                            <strong>Redundant Storage</strong>
+                                                            <div class="text-muted small">Store backups in multiple secure locations</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="list-group-item border-0">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="me-3 text-primary">
+                                                            <i class="bi bi-arrow-repeat fs-5"></i>
+                                                        </div>
+                                                        <div>
+                                                            <strong>Test Restoration</strong>
+                                                            <div class="text-muted small">Periodically verify backup integrity by restoring</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Audit Logs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card feature-card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0"><i class="bi bi-list-check"></i> Recent Audit Events</h3>
+                    <a href="{{ url_for('audit_demo') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i> View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Type</th>
+                                    <th>User</th>
+                                    <th>Description</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in audit_logs|default([]) %}
+                                <tr>
+                                    <td>{{ log.EventTime }}</td>
+                                    <td><span class="badge bg-info">{{ log.EventType }}</span></td>
+                                    <td>{{ log.Username }}</td>
+                                    <td>{{ log.EventDescription }}</td>
+                                    <td>{{ log.IPAddress }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for executing queries -->
+<form id="queryForm" method="POST" action="{{ url_for('execute_query') }}" style="display:none;">
+    <input type="hidden" id="hiddenQuery" name="query" value="">
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Function to execute a query via the execute_query route
+    function executeQuery(query) {
+        document.getElementById('hiddenQuery').value = query;
+        document.getElementById('queryForm').submit();
+    }
+    
+    // Function to run all security tests
+    function runAllTests() {
+        document.body.style.cursor = 'wait';
+        fetch('/run_security_tests')
+            .then(response => {
+                document.body.style.cursor = 'default';
+                window.location.reload();
+            })
+            .catch(error => {
+                document.body.style.cursor = 'default';
+                console.error('Error:', error);
+                alert('An error occurred while running security tests.');
+            });
+    }
+    
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
+{% endblock %} 

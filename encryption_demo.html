@@ -1,0 +1,121 @@
+<!-- templates/encryption_demo.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Column-Level Encryption Demo</h1>
+
+    <!-- Info Box -->
+    <div class="alert alert-info">
+        <p>This demo shows how sensitive data is encrypted in the database and how it can be decrypted when accessed with appropriate privileges.</p>
+    </div>
+
+    <div class="row">
+        <!-- Encryption Keys -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Encryption Keys</h5>
+                </div>
+                <div class="card-body">
+                    {% if keys is defined and keys %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Key Name</th>
+                                    <th>Key Value</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for key in keys %}
+                                <tr>
+                                    <td>{{ key.KeyID }}</td>
+                                    <td>{{ key.KeyName }}</td>
+                                    <td><code>{{ key.key_value }}</code></td>
+                                    <td><span class="badge {% if key.KeyStatus == 'Active' %}bg-success{% elif key.KeyStatus == 'Inactive' %}bg-warning{% else %}bg-danger{% endif %}">{{ key.KeyStatus }}</span></td>
+                                    <td>{{ key.CreationDate }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        No encryption keys found. Please generate encryption keys first.
+                        <hr>
+                        <a href="#" class="btn btn-primary" onclick="generateKey()">Generate New Key</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sample Encrypted Data -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Sample Encrypted Data</h5>
+                </div>
+                <div class="card-body">
+                    {% if encrypted_data is defined and encrypted_data %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Contact</th>
+                                    <th>Email</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data in encrypted_data %}
+                                <tr>
+                                    <td>{{ data.StudentID }}</td>
+                                    <td><code>{{ data.Contact }}</code></td>
+                                    <td><code>{{ data.Email }}</code></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        No encrypted data found.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function generateKey() {
+    if (confirm('Are you sure you want to generate a new encryption key?')) {
+        fetch('/generate_key', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error generating key: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}

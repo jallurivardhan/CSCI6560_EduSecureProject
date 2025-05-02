@@ -1,0 +1,207 @@
+<!-- templates/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --mtsu-blue: #0066CC;
+        --mtsu-light-blue: #4d94ff;
+    }
+    .welcome-card {
+        background: linear-gradient(135deg, var(--mtsu-blue), var(--mtsu-light-blue));
+        color: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 102, 204, 0.2);
+        border: none;
+        margin-bottom: 30px;
+    }
+    .feature-card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+        height: 100%;
+    }
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+    .feature-card .card-header {
+        border-radius: 10px 10px 0 0;
+        font-weight: 500;
+    }
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+        padding: 15px;
+        transition: all 0.2s ease;
+    }
+    .list-group-item:hover {
+        background-color: rgba(0, 102, 204, 0.05);
+    }
+    .list-group-item:first-child {
+        border-top: none;
+    }
+    .badge-blue {
+        background-color: var(--mtsu-blue);
+        color: white;
+    }
+    .table-container {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .permissions-table th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid var(--mtsu-blue);
+    }
+    .permissions-table .role-header {
+        text-align: center;
+        font-weight: 600;
+    }
+    .check-icon {
+        color: #28a745;
+    }
+    .times-icon {
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="welcome-card card mb-4">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="bi bi-person-circle" style="font-size: 3rem;"></i>
+                </div>
+                <div>
+                    <h2 class="mb-1">Welcome, {{ session.user_id }}!</h2>
+                    <p class="lead mb-0">You are logged in with <strong>{{ session.role }}</strong> privileges</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="mb-4"><i class="bi bi-shield-lock me-2"></i>MTSU Academic Security System</h3>
+
+    <div class="row">
+        <!-- Security Features Card -->
+        <div class="col-md-6 mb-4">
+            <div class="feature-card card h-100">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-shield-check me-2"></i>Security Features</h4>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group">
+                        <a href="{{ url_for('rbac_demo') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">Role-Based Access Control</h5>
+                                <p class="mb-1 text-muted">View role-based data access restrictions</p>
+                            </div>
+                            <span class="badge badge-blue rounded-pill">View</span>
+                        </a>
+                        
+                        <a href="{{ url_for('encryption_demo') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">Column-Level Encryption</h5>
+                                <p class="mb-1 text-muted">See how sensitive data is encrypted</p>
+                            </div>
+                            <span class="badge badge-blue rounded-pill">View</span>
+                        </a>
+                        
+                        <a href="{{ url_for('masking_demo') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">Data Masking</h5>
+                                <p class="mb-1 text-muted">See role-based data masking in action</p>
+                            </div>
+                            <span class="badge badge-blue rounded-pill">View</span>
+                        </a>
+                        
+                        <a href="{{ url_for('audit_demo') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">Server Audit</h5>
+                                <p class="mb-1 text-muted">View system activity logs</p>
+                            </div>
+                            <span class="badge badge-blue rounded-pill">View</span>
+                        </a>
+                        
+                        {% if session.role == 'AdminRole' %}
+                        <a href="{{ url_for('execute_query') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">Execute SQL Query</h5>
+                                <p class="mb-1 text-muted">Run custom SQL queries (Admin only)</p>
+                            </div>
+                            <span class="badge badge-blue rounded-pill">Access</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Access Permissions Card -->
+        <div class="col-md-6 mb-4">
+            <div class="feature-card card h-100">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="bi bi-key me-2"></i>Access Permissions</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table table-striped permissions-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Feature</th>
+                                    <th class="role-header">AdminRole</th>
+                                    <th class="role-header">FacultyRole</th>
+                                    <th class="role-header">StudentRole</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Student Data</td>
+                                    <td class="text-center"><i class="bi bi-check-circle-fill check-icon"></i> Full</td>
+                                    <td class="text-center"><i class="bi bi-check-circle-fill check-icon"></i> Limited</td>
+                                    <td class="text-center"><i class="bi bi-check-circle-fill check-icon"></i> Self Only</td>
+                                </tr>
+                                <tr>
+                                    <td>Faculty Data</td>
+                                    <td class="text-center"><i class="bi bi-check-circle-fill check-icon"></i> Full</td>
+                                    <td class="text-center"><i class="bi bi-check-circle-fill check-icon"></i> Self Only</td>
+                                    <td class="text-center"><i class="bi bi-x-circle-fill times-icon"></i> No Access</td>
+                                </tr>
+                                <tr>
+                                    <td>Manage Courses</td>
+                                    <td class="text-center"><i class="bi bi-check-circle-fill check-icon"></i> Yes</td>
+                                    <td class="text-center"><i class="bi bi-check-circle-fill check-icon"></i> Limited</td>
+                                    <td class="text-center"><i class="bi bi-x-circle-fill times-icon"></i> No</td>
+                                </tr>
+                                <tr>
+                                    <td>Audit Logs</td>
+                                    <td class="text-center"><i class="bi bi-check-circle-fill check-icon"></i> Yes</td>
+                                    <td class="text-center"><i class="bi bi-x-circle-fill times-icon"></i> No</td>
+                                    <td class="text-center"><i class="bi bi-x-circle-fill times-icon"></i> No</td>
+                                </tr>
+                                <tr>
+                                    <td>Encryption Keys</td>
+                                    <td class="text-center"><i class="bi bi-check-circle-fill check-icon"></i> Yes</td>
+                                    <td class="text-center"><i class="bi bi-x-circle-fill times-icon"></i> No</td>
+                                    <td class="text-center"><i class="bi bi-x-circle-fill times-icon"></i> No</td>
+                                </tr>
+                                <tr>
+                                    <td>SQL Queries</td>
+                                    <td class="text-center"><i class="bi bi-check-circle-fill check-icon"></i> Yes</td>
+                                    <td class="text-center"><i class="bi bi-x-circle-fill times-icon"></i> No</td>
+                                    <td class="text-center"><i class="bi bi-x-circle-fill times-icon"></i> No</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

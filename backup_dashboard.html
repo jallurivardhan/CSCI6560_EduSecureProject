@@ -1,0 +1,440 @@
+{% extends 'base.html' %}
+
+{% block title %}Database Backup Dashboard{% endblock %}
+
+{% block head %}
+<style>
+    :root {
+        --mtsu-blue: #0066CC;
+        --mtsu-light-blue: #75B2DD;
+        --mtsu-blue-gradient: linear-gradient(135deg, #0066CC, #75B2DD);
+    }
+    
+    .backup-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border: none;
+        border-radius: 8px;
+        overflow: hidden;
+        height: 100%;
+    }
+    .backup-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+    }
+    .stats-card {
+        border-left: 4px solid var(--mtsu-blue);
+        background: linear-gradient(to right, rgba(0,102,204,0.05), transparent);
+    }
+    .actions-btn {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+    .card-header {
+        font-weight: 500;
+        background-color: white;
+        border-bottom: 2px solid rgba(0,102,204,0.1);
+    }
+    .dashboard-icon {
+        font-size: 2.5rem;
+        color: var(--mtsu-blue);
+        margin-bottom: 10px;
+    }
+    .table th {
+        background-color: rgba(117,178,221,0.1);
+        border-color: rgba(0,102,204,0.1);
+    }
+    .dashboard-title {
+        color: var(--mtsu-blue);
+        font-weight: 600;
+    }
+    .btn-primary {
+        background-color: var(--mtsu-blue);
+        border-color: var(--mtsu-blue);
+    }
+    .btn-primary:hover {
+        background-color: #005bb8;
+        border-color: #005bb8;
+    }
+    .bg-primary {
+        background-color: var(--mtsu-blue) !important;
+    }
+    .bg-info {
+        background-color: var(--mtsu-light-blue) !important;
+    }
+    .backup-header {
+        background: var(--mtsu-blue-gradient);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(0,102,204,0.2);
+    }
+    .stats-container {
+        margin-top: -40px;
+    }
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 600;
+        color: var(--mtsu-blue);
+    }
+    .stat-label {
+        color: #6c757d;
+        font-weight: 500;
+    }
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(117,178,221,0.05);
+    }
+    .modal-header.bg-primary {
+        background: var(--mtsu-blue-gradient) !important;
+    }
+    .modal-header.bg-danger {
+        background: linear-gradient(135deg, #dc3545, #ff6b6b) !important;
+    }
+    .no-backups {
+        padding: 30px;
+        text-align: center;
+        background-color: rgba(117,178,221,0.05);
+        border-radius: 8px;
+    }
+    .btn-outline-primary {
+        color: var(--mtsu-blue);
+        border-color: var(--mtsu-blue);
+    }
+    .btn-outline-primary:hover {
+        background-color: var(--mtsu-blue);
+        border-color: var(--mtsu-blue);
+    }
+    .white-icon {
+        color: white !important;
+    }
+    .dark-icon {
+        color: #212529 !important;
+    }
+    .btn-dashboard {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .btn-dashboard:hover {
+        background-color: rgba(255, 255, 255, 0.3);
+        color: white;
+    }
+    .feature-icon {
+        font-size: 2.5rem;
+        color: var(--mtsu-blue);
+        margin-bottom: 15px;
+    }
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="backup-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-0"><i class="bi bi-database-fill white-icon"></i> Backup Dashboard</h1>
+            <p class="mb-0 text-white-50">Manage your database backups and restore points</p>
+        </div>
+        <a href="{{ url_for('create_backup_route') }}" class="btn btn-dashboard">
+            <i class="bi bi-plus-circle-fill white-icon"></i> Create New Backup
+        </a>
+    </div>
+    
+    {% if stats %}
+    <div class="row stats-container mb-4">
+        <div class="col-md-3">
+            <div class="card backup-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon">
+                        <i class="bi bi-archive-fill"></i>
+                    </div>
+                    <div class="stat-label">Total Backups</div>
+                    <div class="stat-value">{{ stats.total_backups or stats.TotalBackups or 0 }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card backup-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon">
+                        <i class="bi bi-hdd-fill"></i>
+                    </div>
+                    <div class="stat-label">Total Size</div>
+                    <div class="stat-value">
+                        {% if stats.total_size is defined and stats.total_size != None %}
+                            {{ (stats.total_size / (1024*1024))|round(2) }} MB
+                        {% elif stats.TotalSize is defined and stats.TotalSize != None %}
+                            {{ (stats.TotalSize / (1024*1024))|round(2) }} MB 
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card backup-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon">
+                        <i class="bi bi-tags-fill"></i>
+                    </div>
+                    <div class="stat-label">Backup Types</div>
+                    <div class="mt-2">
+                        {% if stats.backup_types is defined and stats.backup_types %}
+                            {% for type, count in stats.backup_types.items() %}
+                            <span class="badge bg-primary me-2 mb-1">{{ type }}: {{ count }}</span>
+                            {% endfor %}
+                        {% elif stats.BackupTypes is defined and stats.BackupTypes %}
+                            {% for type, count in stats.BackupTypes.items() %}
+                            <span class="badge bg-primary me-2 mb-1">{{ type }}: {{ count }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="badge bg-secondary">No data</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card backup-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </div>
+                    <div class="stat-label">Most Restored</div>
+                    {% if stats.most_restored %}
+                    <div class="stat-value">{{ stats.most_restored.name }}</div>
+                    <small class="text-muted">{{ stats.most_restored.count }} times</small>
+                    {% elif stats.MostRestored %}
+                    <div class="stat-value">{{ stats.MostRestored.name }}</div>
+                    <small class="text-muted">{{ stats.MostRestored.count }} times</small>
+                    {% else %}
+                    <p class="text-muted">None</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="card backup-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 dashboard-title"><i class="bi bi-list-ul dark-icon"></i> Available Backups</h5>
+        </div>
+        <div class="card-body">
+            {% if backups %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Date</th>
+                                <th>Size</th>
+                                <th>Status</th>
+                                <th>Created By</th>
+                                <th>Restores</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for backup in backups %}
+                                <tr>
+                                    <td>{{ backup.name or backup.BackupName }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if backup.type == 'Full' or backup.BackupType == 'Full' %}primary{% elif backup.type == 'Differential' or backup.BackupType == 'Differential' %}info{% else %}secondary{% endif %}">
+                                            {{ backup.type or backup.BackupType or 'Unknown' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ backup.date or backup.BackupDate }}</td>
+                                    <td>
+                                        {% if backup.size is defined and backup.size != None %}
+                                            {{ (backup.size / (1024*1024))|round(2) }} MB
+                                        {% elif backup.BackupSize is defined and backup.BackupSize != None %}
+                                            {{ (backup.BackupSize / (1024*1024))|round(2) }} MB
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if backup.status == 'Complete' or backup.BackupStatus == 'Complete' or backup.status == 'Completed' or backup.BackupStatus == 'Completed' %}success{% elif backup.status == 'In Progress' or backup.BackupStatus == 'In Progress' %}warning{% elif backup.status == 'Failed' or backup.BackupStatus == 'Failed' %}danger{% else %}secondary{% endif %}">
+                                            {{ backup.status or backup.BackupStatus or 'Unknown' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ backup.created_by or backup.CreatedBy or 'Unknown' }}</td>
+                                    <td>{{ backup.restore_count or backup.RestoreCount or 0 }}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary mb-1" data-bs-toggle="modal" data-bs-target="#restoreModal{{ loop.index }}">
+                                            <i class="bi bi-arrow-clockwise"></i> Restore
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ loop.index }}">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                        
+                                        <!-- Restore Modal -->
+                                        <div class="modal fade" id="restoreModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-primary">
+                                                        <h5 class="modal-title text-white"><i class="bi bi-arrow-counterclockwise white-icon"></i> Restore Database</h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Are you sure you want to restore the database from backup <strong>{{ backup.name or backup.BackupName }}</strong>?</p>
+                                                        <div class="alert alert-warning">
+                                                            <i class="bi bi-exclamation-triangle-fill"></i> This will overwrite the current database state. This action cannot be undone.
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <form action="{{ url_for('backup_dashboard', backup_name=backup.name or backup.BackupName) }}" method="post">
+                                                            <button type="submit" class="btn btn-primary">Confirm Restore</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Delete Modal -->
+                                        <div class="modal fade" id="deleteModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-danger">
+                                                        <h5 class="modal-title text-white"><i class="bi bi-trash white-icon"></i> Delete Backup</h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Are you sure you want to delete the backup <strong>{{ backup.name or backup.BackupName }}</strong>?</p>
+                                                        <div class="alert alert-danger">
+                                                            <i class="bi bi-exclamation-triangle-fill"></i> This action cannot be undone.
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <form action="{{ url_for('backup_dashboard', backup_name=backup.name or backup.BackupName) }}" method="post">
+                                                            <button type="submit" class="btn btn-danger">Confirm Delete</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="no-backups">
+                    <i class="bi bi-database-x feature-icon"></i>
+                    <h4>No backups available</h4>
+                    <p class="text-muted">Create your first backup to ensure your data is protected.</p>
+                    <a href="{{ url_for('create_backup_route') }}" class="btn btn-primary mt-2">
+                        <i class="bi bi-plus-circle-fill white-icon"></i> Create Backup
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if stats %}
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card backup-card">
+                <div class="card-header">
+                    <h5 class="mb-0 dashboard-title"><i class="bi bi-calendar-check dark-icon"></i> Backup Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <div>
+                            <span class="badge bg-secondary">First Backup</span>
+                            <div class="mt-1">
+                                {% if stats.oldest_backup is defined and stats.oldest_backup %}
+                                    {{ stats.oldest_backup }}
+                                {% elif stats.OldestBackup is defined and stats.OldestBackup %}
+                                    {{ stats.OldestBackup }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-primary">Last Backup</span>
+                            <div class="mt-1">
+                                {% if stats.newest_backup is defined and stats.newest_backup %}
+                                    {{ stats.newest_backup }}
+                                {% elif stats.NewestBackup is defined and stats.NewestBackup %}
+                                    {{ stats.NewestBackup }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card backup-card">
+                <div class="card-header">
+                    <h5 class="mb-0 dashboard-title"><i class="bi bi-check-circle dark-icon"></i> Backup Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        {% if stats.backup_statuses is defined and stats.backup_statuses %}
+                            {% for status, count in stats.backup_statuses.items() %}
+                            <div class="col">
+                                <div class="feature-icon">
+                                    <i class="bi bi-{% if status == 'Complete' or status == 'Completed' %}check-circle-fill{% elif status == 'In Progress' %}hourglass-split{% elif status == 'Failed' %}x-circle-fill{% else %}question-circle-fill{% endif %}"></i>
+                                </div>
+                                <div class="stat-label">{{ status }}</div>
+                                <div class="stat-value">{{ count }}</div>
+                            </div>
+                            {% endfor %}
+                        {% elif stats.BackupStatuses is defined and stats.BackupStatuses %}
+                            {% for status, count in stats.BackupStatuses.items() %}
+                            <div class="col">
+                                <div class="feature-icon">
+                                    <i class="bi bi-{% if status == 'Complete' or status == 'Completed' %}check-circle-fill{% elif status == 'In Progress' %}hourglass-split{% elif status == 'Failed' %}x-circle-fill{% else %}question-circle-fill{% endif %}"></i>
+                                </div>
+                                <div class="stat-label">{{ status }}</div>
+                                <div class="stat-value">{{ count }}</div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="col">
+                                <div class="feature-icon">
+                                    <i class="bi bi-info-circle"></i>
+                                </div>
+                                <div class="stat-label">No Status Data</div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+        
+        // Initialize tooltips for action buttons
+        var actionButtons = document.querySelectorAll('.btn-group .btn');
+        actionButtons.forEach(function(btn) {
+            new bootstrap.Tooltip(btn);
+        });
+    });
+</script>
+{% endblock %} 

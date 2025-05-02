@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Security Tests Results</h2>
+    <div class="alert alert-{{ 'success' if overall_status == 'PASS' else 'danger' }} mb-4">
+        <h4>Overall Status: {{ overall_status }}</h4>
+        <p>Tests Passed: {{ passed_tests }} | Tests Failed: {{ failed_tests }}</p>
+    </div>
+
+    <div class="row">
+        {% for test_name, test_result in test_results.items() %}
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header {{ 'bg-success text-white' if test_result.status == 'PASS' else 'bg-danger text-white' }}">
+                    <h5>{{ test_name }}</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Status:</strong> {{ test_result.status }}</p>
+                    <p>{{ test_result.message }}</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="mt-4">
+        <a href="{{ url_for('security_dashboard') }}" class="btn btn-primary">Back to Security Dashboard</a>
+    </div>
+</div>
+{% endblock %} 

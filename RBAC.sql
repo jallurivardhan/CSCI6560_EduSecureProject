@@ -49,22 +49,20 @@ CREATE PROCEDURE sp_CreateNewUser(
     IN p_Role VARCHAR(50)
 )
 BEGIN
-    SET @createUser = CONCAT('CREATE USER IF NOT EXISTS ''', p_Username, '''@''localhost'' IDENTIFIED BY ''', p_Password, '''');
-    PREPARE stmt FROM @createUser;
-    EXECUTE stmt;
-    DEALLOCATE PREPARE stmt;
+    DECLARE v_user_exists INT;
     
-    SET @grantRole = CONCAT('GRANT ', p_Role, ' TO ''', p_Username, '''@''localhost''');
-    PREPARE stmt FROM @grantRole;
-    EXECUTE stmt;
-    DEALLOCATE PREPARE stmt;
+    SELECT COUNT(*) INTO v_user_exists
+    FROM SystemUsers
+    WHERE UserName = p_Username;
     
-    SET @setDefault = CONCAT('SET DEFAULT ROLE ALL TO ''', p_Username, '''@''localhost''');
-    PREPARE stmt FROM @setDefault;
-    EXECUTE stmt;
-    DEALLOCATE PREPARE stmt;
+    IF v_user_exists > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'User already exists';
+    END IF;
     
-    SELECT CONCAT('User ', p_Username, ' created and assigned role ', p_Role) AS Message;
+    INSERT INTO SystemUsers (UserName, UserPassword, UserRole)
+    VALUES (p_Username, fn_encrypt(p_Password), p_Role);
+    
+    SELECT CONCAT('User ', p_Username, ' created successfully with role ', p_Role) AS Message;
 END//
 
 -- Procedure: Assign an additional role to an existing user

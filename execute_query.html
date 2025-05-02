@@ -1,0 +1,352 @@
+<!-- templates/execute_query.html -->
+{% extends "base.html" %}
+
+{% block title %}SQL Query Executor{% endblock %}
+
+{% block extra_css %}
+<!-- Include CodeMirror and its SQL mode for syntax highlighting -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/codemirror.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/theme/monokai.min.css" rel="stylesheet">
+<style>
+    :root {
+        --mtsu-blue: #0066CC;
+        --mtsu-light-blue: #4d94ff;
+    }
+    .CodeMirror {
+        height: 300px;
+        font-size: 14px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    .fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 100%;
+        z-index: 9999;
+        background: white;
+        padding: 20px;
+    }
+    .query-cards {
+        max-height: 500px;
+        overflow-y: auto;
+    }
+    .query-card {
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-bottom: 10px;
+    }
+    .query-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .query-title {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    .query-description {
+        font-size: 0.9rem;
+        color: #666;
+    }
+    .query-text {
+        font-family: monospace;
+        font-size: 0.8rem;
+        background-color: #f8f9fa;
+        padding: 5px;
+        border-radius: 3px;
+        margin-top: 5px;
+        white-space: pre-wrap;
+        max-height: 70px;
+        overflow-y: auto;
+    }
+    .card-header {
+        background-color: var(--mtsu-blue);
+        color: white;
+    }
+    .btn-primary {
+        background-color: var(--mtsu-blue);
+        border-color: var(--mtsu-blue);
+    }
+    .btn-primary:hover {
+        background-color: var(--mtsu-light-blue);
+        border-color: var(--mtsu-light-blue);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">SQL Query Executor</h2>
+
+    <div class="row">
+        <!-- Query Editor Column -->
+        <div class="col-lg-8">
+            <!-- Warning Message -->
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i>
+                
+            </div><strong>Warning:</strong> SQL execution is restricted to Admin users only. All queries will be logged in the audit system.
+
+            <!-- Query Form -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">SQL Query</h5>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-light" onclick="toggleFullScreen()">
+                            <i class="bi bi-arrows-fullscreen"></i> Toggle Fullscreen
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light ms-2" onclick="clearEditor()">
+                            <i class="bi bi-eraser"></i> Clear
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('execute_query') }}" id="queryForm">
+                        <div class="mb-3">
+                            <textarea id="sql-editor" name="query">{{ query if query is defined else 'SELECT * FROM Students LIMIT 10' }}</textarea>
+                        </div>
+                        {% if warning is defined and warning %}
+                        <div class="alert alert-danger mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="confirm_dangerous" name="confirm_dangerous" required>
+                                <label class="form-check-label text-danger" for="confirm_dangerous">
+                                    {{ warning }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-play-fill"></i> Execute Query
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Query Results -->
+            {% if result and result|length > 0 %}
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Query Results</h5>
+                    <button class="btn btn-sm btn-light" onclick="exportResults()">
+                        <i class="bi bi-download"></i> Export Results
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="results-table">
+                            <thead>
+                                <tr>
+                                    {% for column in result[0].keys() %}
+                                    <th>{{ column }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in result %}
+                                <tr>
+                                    {% for value in row.values() %}
+                                    <td>{{ value }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% elif result %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Query Results</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        The query executed successfully but returned no results.
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if error %}
+            <div class="alert alert-danger mt-4">
+                <strong>Error:</strong> {{ error }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Predefined Queries Column -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Ready-to-Run Queries</h5>
+                </div>
+                <div class="card-body query-cards">
+                    <!-- Student Data Queries -->
+                    <div class="query-card card" onclick="executeDirectQuery('SELECT * FROM Students LIMIT 10')">
+                        <div class="card-body">
+                            <div class="query-title">View Students</div>
+                            <div class="query-description">Display first 10 student records</div>
+                            <div class="query-text">SELECT * FROM Students LIMIT 10</div>
+                        </div>
+                    </div>
+
+                    <div class="query-card card" onclick="executeDirectQuery('SELECT COUNT(*) AS TotalStudents FROM Students')">
+                        <div class="card-body">
+                            <div class="query-title">Count Students</div>
+                            <div class="query-description">Get total number of students</div>
+                            <div class="query-text">SELECT COUNT(*) AS TotalStudents FROM Students</div>
+                        </div>
+                    </div>
+
+                    <!-- User Management Queries -->
+                    <div class="query-card card" onclick="executeDirectQuery('SELECT UserName, UserRole, LastLogin FROM SystemUsers')">
+                        <div class="card-body">
+                            <div class="query-title">List All Users</div>
+                            <div class="query-description">Show all users and their roles</div>
+                            <div class="query-text">SELECT UserName, UserRole, LastLogin FROM SystemUsers</div>
+                        </div>
+                    </div>
+
+                    <div class="query-card card" onclick="executeDirectQuery('SELECT UserRole, COUNT(*) AS UserCount FROM SystemUsers GROUP BY UserRole')">
+                        <div class="card-body">
+                            <div class="query-title">Users per Role</div>
+                            <div class="query-description">Count users in each role</div>
+                            <div class="query-text">SELECT UserRole, COUNT(*) AS UserCount FROM SystemUsers GROUP BY UserRole</div>
+                        </div>
+                    </div>
+
+                    <!-- System Information Queries -->
+                    <div class="query-card card" onclick="executeDirectQuery('SHOW TABLES')">
+                        <div class="card-body">
+                            <div class="query-title">Show Tables</div>
+                            <div class="query-description">List all tables in the database</div>
+                            <div class="query-text">SHOW TABLES</div>
+                        </div>
+                    </div>
+
+                    <div class="query-card card" onclick="executeDirectQuery('SHOW GRANTS FOR CURRENT_USER')">
+                        <div class="card-body">
+                            <div class="query-title">Current Privileges</div>
+                            <div class="query-description">Show your database privileges</div>
+                            <div class="query-text">SHOW GRANTS FOR CURRENT_USER</div>
+                        </div>
+                    </div>
+
+                    <!-- Audit & Security Queries -->
+                    <div class="query-card card" onclick="executeDirectQuery('SELECT EventTime, EventType, Username, EventDescription FROM SystemAuditLog ORDER BY EventTime DESC LIMIT 20')">
+                        <div class="card-body">
+                            <div class="query-title">Recent Audit Logs</div>
+                            <div class="query-description">Show last 20 audit events</div>
+                            <div class="query-text">SELECT EventTime, EventType, Username, EventDescription FROM SystemAuditLog ORDER BY EventTime DESC LIMIT 20</div>
+                        </div>
+                    </div>
+
+                    <div class="query-card card" onclick="executeDirectQuery('SELECT EventType, COUNT(*) as Count FROM SystemAuditLog GROUP BY EventType ORDER BY Count DESC')">
+                        <div class="card-body">
+                            <div class="query-title">Audit Summary</div>
+                            <div class="query-description">Count events by type</div>
+                            <div class="query-text">SELECT EventType, COUNT(*) as Count FROM SystemAuditLog GROUP BY EventType ORDER BY Count DESC</div>
+                        </div>
+                    </div>
+
+                    <!-- Encryption Queries -->
+                    <div class="query-card card" onclick="executeDirectQuery('SELECT * FROM ColumnEncryptionKeys')">
+                        <div class="card-body">
+                            <div class="query-title">View Encryption Keys</div>
+                            <div class="query-description">Show all encryption keys</div>
+                            <div class="query-text">SELECT * FROM ColumnEncryptionKeys</div>
+                        </div>
+                    </div>
+
+                    <!-- Schema Information -->
+                    <div class="query-card card" onclick="executeDirectQuery('SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()')">
+                        <div class="card-body">
+                            <div class="query-title">Database Schema</div>
+                            <div class="query-description">View all tables and columns</div>
+                            <div class="query-text">SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE()</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.62.0/mode/sql/sql.min.js"></script>
+
+<script>
+    // Initialize CodeMirror editor
+    var editor = CodeMirror.fromTextArea(document.getElementById("sql-editor"), {
+        mode: "text/x-mysql",
+        theme: "monokai",
+        lineNumbers: true,
+        indentWithTabs: true,
+        smartIndent: true,
+        lineWrapping: true,
+        matchBrackets: true,
+        autofocus: true
+    });
+
+    // Toggle fullscreen mode
+    function toggleFullScreen() {
+        var editorElement = editor.getWrapperElement();
+        if (!editorElement.classList.contains('fullscreen')) {
+            editorElement.classList.add('fullscreen');
+            editor.refresh();
+        } else {
+            editorElement.classList.remove('fullscreen');
+            editor.refresh();
+        }
+    }
+
+    // Clear editor
+    function clearEditor() {
+        editor.setValue('');
+        editor.focus();
+    }
+
+    // Execute direct query
+    function executeDirectQuery(query) {
+        editor.setValue(query);
+        document.getElementById('queryForm').submit();
+    }
+
+    // Export results to CSV
+    function exportResults() {
+        var table = document.getElementById("results-table");
+        var csv = [];
+        var rows = table.querySelectorAll("tr");
+        
+        for (var i = 0; i < rows.length; i++) {
+            var row = [], cols = rows[i].querySelectorAll("td, th");
+            
+            for (var j = 0; j < cols.length; j++) {
+                // Escape quotes and add quotes around each field
+                var data = cols[j].innerText.replace(/"/g, '""');
+                row.push('"' + data + '"');
+            }
+            
+            csv.push(row.join(","));        
+        }
+
+        // Create CSV file and download it
+        var csv_string = csv.join("\n");
+        var filename = 'query_results_' + new Date().toISOString().slice(0,19).replace(/:/g, '-') + '.csv';
+        var link = document.createElement('a');
+        link.style.display = 'none';
+        link.setAttribute('target', '_blank');
+        link.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv_string));
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Security Features Demo</h2>
+
+    <!-- Test Results Summary -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Security Tests</h4>
+        </div>
+        <div class="card-body">
+            <!-- RBAC Tests -->
+            <div class="col-md-12">
+                <h4>Role-Based Access Control (RBAC)</h4>
+                <ul class="list-group">
+                    {% for test in rbac_tests %}
+                    <li class="list-group-item list-group-item-success">
+                        <i class="fas fa-check-circle"></i> {{ test.name }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audit Logs -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">Recent Audit Logs</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Event Type</th>
+                            <th>Username</th>
+                            <th>Description</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in audit_logs %}
+                        <tr>
+                            <td>{{ log.EventType }}</td>
+                            <td>{{ log.Username }}</td>
+                            <td>{{ log.EventDescription }}</td>
+                            <td>{{ log.EventTime }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

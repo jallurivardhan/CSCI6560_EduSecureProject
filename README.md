@@ -1,57 +1,73 @@
+# AcademyDB Security System
 
-# Edu Secure Setup Instructions
+A Flask-based security management system for academic database administration implementing multiple database security features.
 
-## Prerequisites
+## Features
 
-- **MySQL Server**: Make sure MySQL Server is installed and operational on your computer.
-- **SQL Client**: Use any SQL client like MySQL Workbench, phpMyAdmin, or the command-line client to interact with MySQL.
+- **Role-Based Access Control (RBAC)**
+  - Admin, Faculty, and Student roles
+  - Granular permission management
+  - Role-based data access control
 
-## File Descriptions
+- **Data Security**
+  - Column-level encryption for sensitive data
+  - Dynamic data masking based on user roles
+  - Comprehensive audit logging
+  - Automated security triggers
 
-1. **database_creation.sql**
-   - **Purpose**: This file contains SQL commands to set up the initial database and tables. It also includes a combined view that joins student and faculty information with user login data.
-   - **Execution**: First, to create the necessary database structure.
+- **Database Management**
+  - Automated backup and restore functionality
+  - Security metrics dashboard
+  - User activity monitoring
+  - Real-time security alerts
 
-2. **encryption_procedures.sql**
-   - **Purpose**: Defines functions and procedures for securely handling password encryption and storage.
-   - **Execution**: Execute after `database_creation.sql` to ensure all user passwords are encrypted correctly when inserted.
+## Project Structure
 
-3. **rbac.sql**
-   - **Purpose**: Establishes roles and permissions (Role-Based Access Control). This script creates roles such as AdminRole, FacultyRole, and StudentRole, and assigns these roles to users.
-   - **Execution**: Run after `encryption_procedures.sql` to set up roles and assign them appropriately.
+```
+.
+├── app.py                 # Main application file
+├── requirements.txt       # Python dependencies
+├── Sql/                  # SQL scripts and procedures
+├── static/              # Static assets (CSS, JS, images)
+└── Template/            # HTML templates
+```
 
-4. **triggers.sql**
-   - **Purpose**: Contains triggers that automatically handle data integrity and update tasks, such as logging changes or maintaining history tables.
-   - **Execution**: Execute last to ensure that triggers are set up after all tables are in place.
+## Installation
 
-## Steps to Run the Scripts
+1. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-### Step 1: Connect to MySQL
-Open your SQL client and connect to the MySQL server.
+2. Run the application:
+   ```bash
+   python app.py
+   ```
 
-### Step 2: Run `database_creation.sql`
-Load and execute the `database_creation.sql` to create the initial database schema. This script will create the `AcademyDB_Extended` database along with all the required tables and views.
+## Usage
 
-### Step 3: Execute `encryption_procedures.sql`
-After creating the tables, run the `encryption_procedures.sql` to define encryption functions that will handle user password security.
+1. Access the web interface at `http://localhost:5000`
+2. Login credentials:
+   - Admin: Admin1
+   - Faculty: Faculty1
+   - Student: Student1
 
-### Step 4: Apply `rbac.sql`
-Load and run the `rbac.sql` to create necessary user roles and permissions. It also includes user creation and role assignments based on your access control needs.
+## Security Features
 
-### Step 5: Implement `triggers.sql`
-Finally, execute the `triggers.sql` file to set up database triggers that help in maintaining data integrity and automated task handling.
+### RBAC Implementation
+- AdminRole: Full system access
+- FacultyRole: Limited access to student data
+- StudentRole: Access to personal data only
 
-### Step 6: Verify Installation
-Verify that all components are correctly installed:
-- Query some tables to see if they contain the expected structure.
-- Use role management procedures to test if roles and permissions are applied correctly.
+### Data Protection
+- AES encryption for sensitive fields
+- Dynamic data masking
+- Comprehensive audit trails
+- Automated security triggers
 
-### Step 7: Troubleshooting
-If you encounter any issues:
-- Check the SQL syntax if there are errors during execution.
-- Ensure your MySQL user has sufficient permissions to create databases, tables, roles, and triggers.
-- Review error messages for clues on what might be wrong, adjusting file paths or permissions as needed.
+### Monitoring
+- Real-time user activity tracking
+- Security metrics dashboard
+- Automated backup management
+- Security test suite
 
-## Summary
-
-This setup ensures that your environment is ready with secure handling of user data, proper access control, and triggers for automated data management. Follow these steps carefully to ensure a smooth setup.

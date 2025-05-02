@@ -1,0 +1,168 @@
+<!-- templates/rbac_demo.html -->
+{% extends "base.html" %}
+
+{% block title %}Role-Based Access Control Demo{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --mtsu-blue: #0066CC;
+        --mtsu-light-blue: #4d94ff;
+    }
+    .view-list {
+        border-radius: 5px;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .view-header {
+        background-color: var(--mtsu-blue);
+        color: white;
+        padding: 12px 15px;
+        font-weight: 600;
+    }
+    .view-item {
+        padding: 10px 15px;
+        border-bottom: 1px solid #eee;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        background-color: white;
+    }
+    .view-item:hover {
+        background-color: #f8f9fa;
+    }
+    .view-item.active {
+        background-color: var(--mtsu-light-blue);
+        color: white;
+    }
+    .feature-box {
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    .feature-box h3 {
+        background-color: var(--mtsu-blue);
+        color: white;
+        padding: 10px 15px;
+        margin: 0;
+        font-size: 18px;
+    }
+    .feature-box .content {
+        padding: 15px;
+        background-color: white;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid var(--mtsu-blue);
+        text-align: left;
+        padding: 8px;
+    }
+    td {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+    }
+    tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+    tr:hover {
+        background-color: rgba(0, 102, 204, 0.05);
+    }
+    .info-box {
+        background-color: #e6f3ff;
+        border-left: 4px solid var(--mtsu-blue);
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Role-Based Access Control Demo</h1>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="info-box">
+                <h5><i class="bi bi-person-badge me-2"></i>Current Role: {{ session.role }}</h5>
+                <p class="mb-0">This demo shows the different database views accessible to each role.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="view-list mb-4">
+                <div class="view-header">
+                    <i class="bi bi-table me-2"></i>Available Views
+                </div>
+                {% for view in views %}
+                <a href="#{{ view }}" class="view-item d-block text-decoration-none text-dark">{{ view }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="col-md-9">
+            {% for view, data in view_data.items() %}
+            <div class="feature-box" id="{{ view }}">
+                <h3>{{ view }}</h3>
+                <div class="content">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    {% if data and data[0] %}
+                                        {% for column in data[0].keys() %}
+                                        <th>{{ column }}</th>
+                                        {% endfor %}
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in data %}
+                                <tr>
+                                    {% for value in row.values() %}
+                                    <td>{{ value }}</td>
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Highlight currently viewed section
+    document.addEventListener('DOMContentLoaded', function() {
+        const viewItems = document.querySelectorAll('.view-item');
+        
+        // Add click event to each view item
+        viewItems.forEach(item => {
+            item.addEventListener('click', function() {
+                // Remove active class from all items
+                viewItems.forEach(i => i.classList.remove('active'));
+                // Add active class to clicked item
+                this.classList.add('active');
+            });
+        });
+        
+        // Set the first item as active by default
+        if (viewItems.length > 0) {
+            viewItems[0].classList.add('active');
+        }
+    });
+</script>
+{% endblock %}
+

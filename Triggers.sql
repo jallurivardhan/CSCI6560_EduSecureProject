@@ -1,12 +1,14 @@
-
 USE AcademyDB_Extended;
 
 -- Updated SystemUsers table with additional columns
 CREATE TABLE IF NOT EXISTS SystemUsers (
     UserName         VARCHAR(50) PRIMARY KEY,
     UserPassword     VARBINARY(1000),
+    UserRole         VARCHAR(20) NOT NULL DEFAULT 'StudentRole',  -- Added role column
     LastLogin        DATETIME DEFAULT NULL,  -- Last successful login time
-    FailedLoginCount INT DEFAULT 0           -- Counter for failed login attempts
+    FailedLoginCount INT DEFAULT 0,          -- Counter for failed login attempts
+    AccountStatus    ENUM('Active', 'Locked', 'Inactive') DEFAULT 'Active',
+    CONSTRAINT chk_valid_role CHECK (UserRole IN ('AdminRole', 'FacultyRole', 'StudentRole'))
 );
 
 DELIMITER //
@@ -16,8 +18,8 @@ CREATE TRIGGER IF NOT EXISTS trg_StuUserSync
 AFTER INSERT ON Students
 FOR EACH ROW
 BEGIN
-    INSERT INTO SystemUsers (UserName, UserPassword)
-    VALUES (NEW.StudentID, NEW.UserPassword)
+    INSERT INTO SystemUsers (UserName, UserPassword, UserRole)
+    VALUES (NEW.StudentID, NEW.UserPassword, 'StudentRole')
     ON DUPLICATE KEY UPDATE UserPassword = NEW.UserPassword;
 END//
 
@@ -44,8 +46,8 @@ CREATE TRIGGER IF NOT EXISTS trg_FacultyUserSync
 AFTER INSERT ON Faculty
 FOR EACH ROW
 BEGIN
-    INSERT INTO SystemUsers (UserName, UserPassword)
-    VALUES (NEW.FacultyID, NEW.UserPassword)
+    INSERT INTO SystemUsers (UserName, UserPassword, UserRole)
+    VALUES (NEW.FacultyID, NEW.UserPassword, 'FacultyRole')
     ON DUPLICATE KEY UPDATE UserPassword = NEW.UserPassword;
 END//
 
@@ -65,6 +67,16 @@ BEGIN
     UPDATE SystemUsers
     SET UserPassword = NEW.UserPassword
     WHERE UserName = NEW.FacultyID;
+END//
+
+-- Trigger: Synchronize Admin changes (INSERT) with SystemUsers
+CREATE TRIGGER IF NOT EXISTS trg_AdminUserSync
+AFTER INSERT ON Admin
+FOR EACH ROW
+BEGIN
+    INSERT INTO SystemUsers (UserName, UserPassword, UserRole)
+    VALUES (NEW.AdminID, NEW.UserPassword, 'AdminRole')
+    ON DUPLICATE KEY UPDATE UserPassword = NEW.UserPassword;
 END//
 
 -- Additional triggers: automatically update LastModifiedOn/LastModifiedBy on Students & Faculty

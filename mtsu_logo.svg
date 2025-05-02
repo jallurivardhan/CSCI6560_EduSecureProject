@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="100" viewBox="0 0 300 100">
+  <!-- MTSU Logo -->
+  <style>
+    .text-primary { fill: #0066CC; }
+    .text-secondary { fill: #75B2DD; }
+    .logo-bg { fill: #0066CC; }
+  </style>
+  
+  <!-- Logo Background -->
+  <rect x="10" y="25" width="50" height="50" rx="8" class="logo-bg" />
+  
+  <!-- Graduation Cap Symbol -->
+  <path d="M35 32 L55 40 L35 48 L15 40 Z" fill="white" />
+  <path d="M35 48 L35 58 M22 43 L22 52 L35 58 L48 52 L48 43" stroke="white" fill="none" stroke-width="2" />
+  <rect x="32" y="28" width="6" height="6" fill="white" />
+  
+  <!-- MTSU Text -->
+  <text x="70" y="45" font-family="Arial, sans-serif" font-size="28" font-weight="bold" class="text-primary">MTSU</text>
+  <text x="70" y="70" font-family="Arial, sans-serif" font-size="18" class="text-secondary">AcademyDB Security</text>
+</svg> 
